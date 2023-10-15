@@ -1,0 +1,17 @@
+* Reason for setting row factory to sqlite3.Row : https://stackoverflow.com/questions/44009452/what-is-the-purpose-of-the-row-factory-method-of-an-sqlite3-connection-object
+
+* Cursor vs Connection in python sqlite3: https://stackoverflow.com/questions/6318126/why-do-you-need-to-create-a-cursor-when-querying-a-sqlite-database
+In particular, the answer by AXO is useful.
+
+* Do I need to close a Cursor object after use? No because the python
+the cursors destructor function (__del__) closes it, so it will be closed
+when python garbage collection occurs. However, it's recommended to close
+it when you're done using it so other programs using the database can
+access the database since only one cursor is allowed at a time https://nitratine.net/blog/post/python-sqlite3-basics/#closing-a-cursor
+
+* How to explicitly make transactions (since some operations like create table are auto committed): https://stackoverflow.com/questions/49056545/transactions-of-an-sqlite3-connection-used-as-a-context-manager-are-not-atomic
+^ data definition language statements do not start a transaction
+
+* sqlite3.connect() doesn't really establish the connection; that is done when you request the cursor
+https://www.youtube.com/watch?v=14z_Tf3p2Mw&t=585 timestamp: 4:35
+
