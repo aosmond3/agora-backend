@@ -10,8 +10,15 @@ it when you're done using it so other programs using the database can
 access the database since only one cursor is allowed at a time https://nitratine.net/blog/post/python-sqlite3-basics/#closing-a-cursor
 
 * How to explicitly make transactions (since some operations like create table are auto committed): https://stackoverflow.com/questions/49056545/transactions-of-an-sqlite3-connection-used-as-a-context-manager-are-not-atomic
-^ data definition language statements do not start a transaction
+^ data definition language statements do not start a transaction;
 
 * sqlite3.connect() doesn't really establish the connection; that is done when you request the cursor
 https://www.youtube.com/watch?v=14z_Tf3p2Mw&t=585 timestamp: 4:35
+
+
+* using "group" when defining group table to get around the fact that group is a keyword in sql;
+using "" bc this is the sql standard: https://stackoverflow.com/questions/25141090/use-backticks-or-double-quotes-with-python-and-sqlite
+^^
+Double quotes are used to quote identifiers like table and column names that would cause errors if not quoted. It's often easier when generating SQL statements to just automatically quote them instead of trying to figure out if they need to be or not. They're no big deal.
+(https://www.reddit.com/r/sqlite/comments/g1lsyq/sqlite3_database_has_quotes_on_column_name_why/)
 
