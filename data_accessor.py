@@ -37,12 +37,9 @@ class SQLite():
 
 
 def initialize_db():
-    sql_manager = SQLite(db_name=DB_NAME) # not using as context manager because need further access to connection object
-    connection = sql_manager.connection
-    cursor = connection.cursor()
+    with SQLite(db_name=DB_NAME) as cursor:
+        cursor.execute("begin") # start transaction (necessary so DDL statement CREATE TABLE doesn't autocommit)
 
-    cursor.execute("begin") # start transaction (necessary so DDL statement CREATE TABLE doesn't autocommit)
-    try:
         query = """
         CREATE TABLE IF NOT EXISTS "user" (
             "uuid"        INTEGER PRIMARY KEY NOT NULL,
@@ -61,16 +58,6 @@ def initialize_db():
         );
         """
         cursor.execute(query)
-
-        logging.info("Committing transaction")
-        connection.commit()
-    except Exception as e:
-        logging.info(f"Rolling back due to exception: {e}")
-        connection.rollback()
-    finally:
-        logging.info("Closing cursor & connection")
-        cursor.close()
-        connection.close()
 
 
 def create_user(uuid: int, username: str, password: str):
@@ -93,6 +80,10 @@ def create_group(group_id: int, group_name: str, group_admin_uuid: int) -> None:
 
 
 def main() -> None:
+    import subprocess
+
+    subprocess.run(["rm", f"{DB_NAME}"])
+
     logging.basicConfig(level=logging.INFO)
     initialize_db()
     create_user(1, "aosmond", "password")
