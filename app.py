@@ -1,4 +1,4 @@
-import src.content_diffusion.database.data_accessor as da
+import data_accessor as da
 
 
 from flask import Flask, jsonify
