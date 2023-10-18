@@ -3,6 +3,9 @@ import logging
 
 DB_NAME = "test.sqlite"
 
+# TODO: add creation datetime fields and such
+# TODO: make an entire class with instance variable DB NAME
+
 
 class SQLite():
     """
@@ -36,24 +39,24 @@ class SQLite():
         self.connection.close()
 
 
-def initialize_db():
-    with SQLite(db_name=DB_NAME) as cursor:
+def initialize_db(db_name: str = DB_NAME):
+    with SQLite(db_name) as cursor:
         cursor.execute("begin") # start transaction (necessary so DDL statement CREATE TABLE doesn't autocommit)
 
         query = """
         CREATE TABLE IF NOT EXISTS "user" (
-            "uuid"        INTEGER PRIMARY KEY NOT NULL,
-            "username"    TEXT UNIQUE NOT NULL,
-            "password"    TEXT NOT NULL
+            "uuid"        INTEGER   PRIMARY KEY     NOT NULL,
+            "username"    TEXT      UNIQUE          NOT NULL,
+            "password"    TEXT                      NOT NULL
         );
         """
         cursor.execute(query)
 
         query = """
         CREATE TABLE IF NOT EXISTS "group" (
-            "group_id"          INTEGER PRIMARY KEY NOT NULL,
-            "group_name"        TEXT NOT NULL,
-            "group_admin_uuid"  INTEGER NOT NULL,
+            "group_id"          INTEGER     PRIMARY KEY     NOT NULL,
+            "group_name"        TEXT                        NOT NULL,
+            "group_admin_uuid"  INTEGER                     NOT NULL,
             FOREIGN KEY("group_admin_uuid") REFERENCES "user"("uuid")
         );
         """
@@ -69,6 +72,7 @@ def create_user(uuid: int, username: str, password: str):
         }
         cursor.execute("""INSERT INTO "user" VALUES(:uuid, :username, :password)""", parameters)
 
+
 def create_group(group_id: int, group_name: str, group_admin_uuid: int) -> None:
     with SQLite(db_name=DB_NAME) as cursor:
         parameters = {
@@ -79,10 +83,31 @@ def create_group(group_id: int, group_name: str, group_admin_uuid: int) -> None:
         cursor.execute("""INSERT INTO "group" VALUES(:group_id, :group_name, :group_admin_uuid)""", parameters)
 
 
+def get_users() -> list[dict]:
+    with SQLite(db_name=DB_NAME) as cursor:
+        query = """
+        SELECT "uuid", "username", "password"
+        FROM USER;
+        """
+        cursor.execute(query)
+        rows =  cursor.fetchall()
+
+        # construct response list
+        users = []
+        for row in rows:
+            user = {}
+            user["uuid"] = row["uuid"]
+            user["username"] = row["username"]
+            user["password"] = row["password"]
+            users.append(user)
+
+        return users
+
+
 def main() -> None:
     import subprocess
 
-    subprocess.run(["rm", f"{DB_NAME}"])
+    subprocess.run(["rm", DB_NAME])
 
     logging.basicConfig(level=logging.INFO)
     initialize_db()
@@ -95,6 +120,11 @@ def main() -> None:
     create_user(2, "josmond", "password")
     create_group(2, "brothers", 2)
 
+    response = get_users()
+    print(response)
 
 if __name__=="__main__":
     main()
+
+
+# TODO: create User class or namedtuple or something and use that in create user????
