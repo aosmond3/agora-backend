@@ -1,13 +1,13 @@
 import logging
 import subprocess
 
-from . import data_accessor as da
+import data_accessor as da
 
 
 DB_NAME = "test.sqlite"
 
 def test_foreign_key():
-    da.initialize_db(db_name=DB_NAME)
+    da.initialize_db()
     da.create_user(1, "aosmond", "password")
     da.create_group(1, "Boone & Sons", 1)
     try:

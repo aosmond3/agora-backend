@@ -4,8 +4,6 @@ import logging
 DB_NAME = "test.sqlite"
 
 # TODO: add creation datetime fields and such
-# TODO: make an entire class with instance variable DB NAME
-
 
 class SQLite():
     """
@@ -39,8 +37,8 @@ class SQLite():
         self.connection.close()
 
 
-def initialize_db(db_name: str = DB_NAME):
-    with SQLite(db_name) as cursor:
+def initialize_db():
+    with SQLite(DB_NAME) as cursor:
         cursor.execute("begin") # start transaction (necessary so DDL statement CREATE TABLE doesn't autocommit)
 
         query = """
