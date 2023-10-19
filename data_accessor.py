@@ -3,7 +3,6 @@ import logging
 
 DB_NAME = "test.sqlite"
 
-# TODO: add creation datetime fields and such
 
 class SQLite():
     """
@@ -25,8 +24,9 @@ class SQLite():
         return self.cursor
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if (exc_type):
-            logging.info(f"Rolling back due to exception: {exc_type}")
+        if exc_type:
+            logging.warning(f"Rolling back due to exception: {exc_type}")
+            logging.warning(f"exc_value: {exc_value}\ntraceback: {traceback}")
             self.connection.rollback()
         else:
             logging.info("Committing transaction")
@@ -37,13 +37,13 @@ class SQLite():
         self.connection.close()
 
 
-def initialize_db():
+def initialize_db(): # TODO: (long term) add creation datetime fields and such
     with SQLite(DB_NAME) as cursor:
         cursor.execute("begin") # start transaction (necessary so DDL statement CREATE TABLE doesn't autocommit)
 
         query = """
         CREATE TABLE IF NOT EXISTS "user" (
-            "uuid"        INTEGER   PRIMARY KEY     NOT NULL,
+            "user_uuid"        INTEGER   PRIMARY KEY     NOT NULL,
             "username"    TEXT      UNIQUE          NOT NULL,
             "password"    TEXT                      NOT NULL
         );
@@ -52,49 +52,44 @@ def initialize_db():
 
         query = """
         CREATE TABLE IF NOT EXISTS "group" (
-            "group_id"          INTEGER     PRIMARY KEY     NOT NULL,
-            "group_name"        TEXT                        NOT NULL,
-            "group_admin_uuid"  INTEGER                     NOT NULL,
-            FOREIGN KEY("group_admin_uuid") REFERENCES "user"("uuid")
+            "group_id"                  INTEGER     PRIMARY KEY     NOT NULL,
+            "group_name"                TEXT                        NOT NULL,
+            "group_admin_uuid"          INTEGER                     NOT NULL,
+            "group_password"            TEXT                        NOT NULL,
+            FOREIGN KEY("group_admin_uuid") REFERENCES "user"("user_uuid")
+        );
+        """
+        cursor.execute(query)
+
+        query = """
+        CREATE TABLE IF NOT EXISTS "group_membership" (
+            "user_uuid"     INTEGER     NOT NULL,
+            "group_id"      INTEGER     NOT NULL,
+            PRIMARY KEY("user_uuid", "group_id"),
+            FOREIGN KEY("user_uuid") REFERENCES "user"("user_uuid"),
+            FOREIGN KEY("group_id") REFERENCES "group"("group_id")
         );
         """
         cursor.execute(query)
 
 
-def create_user(uuid: int, username: str, password: str):
-    with SQLite(db_name=DB_NAME) as cursor:
-        parameters = {
-            "uuid": uuid,
-            "username": username,
-            "password": password
-        }
-        cursor.execute("""INSERT INTO "user" VALUES(:uuid, :username, :password)""", parameters)
-
-
-def create_group(group_id: int, group_name: str, group_admin_uuid: int) -> None:
-    with SQLite(db_name=DB_NAME) as cursor:
-        parameters = {
-            "group_id": group_id,
-            "group_name": group_name,
-            "group_admin_uuid": group_admin_uuid
-        }
-        cursor.execute("""INSERT INTO "group" VALUES(:group_id, :group_name, :group_admin_uuid)""", parameters)
-
-
 def get_users() -> list[dict]:
     with SQLite(db_name=DB_NAME) as cursor:
         query = """
-        SELECT "uuid", "username", "password"
-        FROM USER;
+        SELECT "user_uuid", "username", "password"
+        FROM "user";
         """
         cursor.execute(query)
         rows =  cursor.fetchall()
+
+        if not rows: return rows
+        # TODO: think about throwing exception instead so can be more specific about the error
 
         # construct response list
         users = []
         for row in rows:
             user = {}
-            user["uuid"] = row["uuid"]
+            user["user_uuid"] = row["user_uuid"]
             user["username"] = row["username"]
             user["password"] = row["password"]
             users.append(user)
@@ -102,27 +97,74 @@ def get_users() -> list[dict]:
         return users
 
 
-def main() -> None:
-    import subprocess
+def get_groups_for_user(user_uuid: int):
+    with SQLite(db_name=DB_NAME) as cursor:
+        query = """
+        SELECT "group_id"
+        FROM "group_membership"
+        WHERE "user_uuid" = :user_uuid
+        """
+        cursor.execute(query, {"user_uuid": user_uuid})
+        rows = cursor.fetchall()
 
-    subprocess.run(["rm", DB_NAME])
+        if not rows: return rows # TODO: think about throwing exception instead so can be more specific about the error
 
-    logging.basicConfig(level=logging.INFO)
-    initialize_db()
-    create_user(1, "aosmond", "password")
-    create_group(1, "Boone & Sons", 1)
-    try:
-        create_group(5, "Boone & Sons", 13)
-    except:
-        print("oh well, moving on")
-    create_user(2, "josmond", "password")
-    create_group(2, "brothers", 2)
-
-    response = get_users()
-    print(response)
-
-if __name__=="__main__":
-    main()
+        return {"group_ids": [row["group_id"] for row in rows]}
 
 
-# TODO: create User class or namedtuple or something and use that in create user????
+def get_group_password(group_id: int) -> dict:
+    with SQLite(db_name=DB_NAME) as cursor:
+        query = """
+        SELECT "group_password"
+        FROM "group"
+        WHERE "group_id" = :group_id;
+        """
+        cursor.execute(query, {"group_id": group_id})
+        row = cursor.fetchone()
+
+        return {"group_password": row["group_password"]} if row else row
+        # TODO: think about throwing exception instead so can be more specific about
+        # the error in join_group()
+
+
+def create_user(user_uuid: int, username: str, password: str):
+    with SQLite(db_name=DB_NAME) as cursor:
+        parameters = {
+            "user_uuid": user_uuid,
+            "username": username,
+            "password": password
+        }
+        cursor.execute("""INSERT INTO "user" VALUES(:user_uuid, :username, :password)""", parameters)
+
+
+def create_group(group_id: int, group_name: str, group_admin_uuid: int, group_password: str) -> None:
+    """New group is created and user with uuid = to 'group_admin_uuid' is added to the group"""
+
+    with SQLite(db_name=DB_NAME) as cursor:
+        parameters = {
+            "group_id": group_id,
+            "group_name": group_name,
+            "group_admin_uuid": group_admin_uuid,
+            "group_password": group_password
+        }
+        cursor.execute("""INSERT INTO "group" VALUES(:group_id, :group_name, :group_admin_uuid, :group_password)""", parameters)
+
+        parameters = {
+            "user_uuid": group_admin_uuid,
+            "group_id": group_id
+        }
+        cursor.execute("""INSERT INTO "group_membership" VALUES(:user_uuid, :group_id)""", parameters)
+
+
+def join_group(user_uuid: int, group_id: int, group_password: str) -> bool:
+    true_group_password = get_group_password(group_id)
+    if not true_group_password or true_group_password["group_password"] != group_password:
+        return False
+
+    with SQLite(db_name=DB_NAME) as cursor:
+        parameters = {
+            "user_uuid": user_uuid,
+            "group_id": group_id
+        }
+        cursor.execute("""INSERT INTO "group_membership" VALUES(:user_uuid, :group_id)""", parameters)
+        return True

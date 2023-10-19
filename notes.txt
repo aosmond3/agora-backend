@@ -40,3 +40,9 @@ connection.commit() when it isn't necc. Not sure if there is any downside to thi
 ^ one thing of particular note is that using absolute imports (from ... import) instead of
 relative imports (import ...) is smart. Just pip install the package & then start using from...
 
+* regarding making an index on database columns:
+https://stackoverflow.com/questions/3379292/is-an-index-needed-for-a-primary-key-in-sqlite
+https://www.sqlite.org/lang_createtable.html#rowid
+-> seems like indexes will be constructed on primary keys by default
+(todo: maybe to really optimize in the future I would ensure Primay Key(a, b) creates a separate
+primary key on both a & b, as i would like it to do in the group_membership table, for example)
