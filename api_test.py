@@ -8,41 +8,45 @@ DB_NAME = "test.sqlite"
 
 def test_foreign_key():
     da.initialize_db()
-    da.create_user(1, "aosmond", "password")
-    da.create_group(1, "Boone & Sons", 1, "gpass")
+    da.create_user("aosmond", "password")
+    da.create_group(1, "Boone & Sons", "aosmond", "gpass")
     try:
-        da.create_group(5, "Boone & Sons", 13, "passy")
+        da.create_group(5, "Boone & Sons", "notPerson", "passy")
     except:
         print("oh well, moving on")
-    da.create_user(2, "josmond", "password")
-    da.create_group(2, "brothers", 2, "pass5")
+    da.create_user("josmond", "password")
+    da.create_group(2, "brothers", "josmond", "pass5")
 
     response = da.get_users()
     print(response)
 
-def test_join_group(user_uuid: int, group_id: int, group_password: str):
+def test_join_group(username: str, group_id: int, group_password: str):
     da.initialize_db()
-    da.create_user(1, "aosmond", "aosmond_password")
-    da.create_group(1, "Boone & Sons", 1, "b&spass")
+    da.create_user(username, "aosmond_password")
+    da.create_group(group_id, "Boone & Sons", username, group_password)
 
-    print(da.join_group(user_uuid, group_id, group_password))
+    try:
+        print(da.join_group(username, group_id, group_password))
+    except:
+        print("yay this failed b/c user added to group when they create it!!!")
 
-def test_get_groups_for_user(user_uuid: int):
+    da.create_user("cam", "lololpass")
+    da.join_group("cam", group_id, group_password)
+
+def test_get_groups_for_user(username: str):
     da.initialize_db()
-    da.create_user(1, "aosmond", "aosmond_password")
-    da.create_user(2, "guunt", "guuntymanpass")
-    da.create_group(1, "Boone & Sons", 1, "b&spass")
-    da.create_group(2, "Brothers", 1, "bros")
-    da.join_group(2, 1, "b&spass")
-    print(da.get_groups_for_user(2))
+    da.create_user(username, "aosmond_password")
+    da.create_group(1, "Boone & Sons", username, "b&spass")
+    da.create_group(2, "Brothers", username, "bros")
+    print(da.get_groups_for_user(username))
 
 def main() -> None:
     subprocess.run(["rm", DB_NAME])
     logging.basicConfig(level=logging.WARNING)
 
     # test_foreign_key()
-    # test_join_group(1, 1, "b&spass")
-    test_get_groups_for_user(1)
+    # test_join_group("aosmond", 1, "b&spass")
+    test_get_groups_for_user("aosmond")
 
 
 if __name__=="__main__":
