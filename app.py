@@ -9,6 +9,7 @@ CORS(app) # TODO: research this more
 app = Flask(__name__)
 cors = CORS(app)
 
+
 @app.route("/")
 def hello(): # TODO: delete
     return "Hello, World!"
@@ -18,7 +19,7 @@ def api_get_users():
     return jsonify(da.get_users())
 
 
-@app.route("api/users/groups", methods=["GET"])
+@app.route("/api/users/groups", methods=["GET"])
 def api_get_groups_for_user():
     pass
 
@@ -33,6 +34,6 @@ def api_get_groups_for_user():
 def api_login():
     username = request.form["username"]
     password = request.form["password"]
-    print(username, password)
+    return jsonify({"username": username})
 
 
