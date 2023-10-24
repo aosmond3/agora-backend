@@ -125,6 +125,20 @@ def get_group_password(group_id: int) -> dict:
         # the error in join_group()
 
 
+def get_user_password(username: str) -> str:
+    with SQLite(db_name=DB_NAME) as cursor:
+        query = """
+        SELECT "password"
+        FROM "user"
+        WHERE "username" = :username;
+        """
+        cursor.execute(query, {"username": username})
+        row = cursor.fetchone()
+
+        return {"password": row["password"]} if row else row
+        # TODO: think about throwing exception instead so can be more specific about
+
+
 def create_user(username: str, password: str):
     with SQLite(db_name=DB_NAME) as cursor:
         parameters = {

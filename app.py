@@ -34,6 +34,23 @@ def api_get_groups_for_user():
 def api_login():
     username = request.form["username"]
     password = request.form["password"]
-    return jsonify({"username": username})
+
+    password_response = da.get_user_password(username)
+    if not password_response:
+        # TODO: error handling
+        print("username not found")
+        return jsonify({"logged in": "fail: username not found"})
+
+    if (password != password_response["password"]):
+        # TODO: error handling
+        print("incorrect password")
+        return jsonify({"logged in": "fail: incorr pass"})
+
+    return jsonify({"logged in": "succ"})
+#  Consider: maybe succ login returns a secret key that is
+# needed to query groups and everything for the user
+
+# or maybe unsucc login just prevents user from reaching other webpage
+# so we dont need to worry about secret key
 
 
