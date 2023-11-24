@@ -37,7 +37,7 @@ class SQLite():
         self.connection.close()
 
 
-def initialize_db(): # TODO: (long term) add creation datetime fields and such
+def initialize_db():
     with SQLite(DB_NAME) as cursor:
         cursor.execute("begin") # start transaction (necessary so DDL statement CREATE TABLE doesn't autocommit)
 
@@ -82,7 +82,6 @@ def get_users() -> list[dict]:
         rows =  cursor.fetchall()
 
         if not rows: return rows
-        # TODO: think about throwing exception instead so can be more specific about the error
 
         # construct response list
         users = []
@@ -105,7 +104,7 @@ def get_groups_for_user(username: str):
         cursor.execute(query, {"username": username})
         rows = cursor.fetchall()
 
-        if not rows: return rows # TODO: think about throwing exception instead so can be more specific about the error
+        if not rows: return rows
 
         return {"group_ids": [row["group_id"] for row in rows]}
 
@@ -121,8 +120,6 @@ def get_group_password(group_id: int) -> dict:
         row = cursor.fetchone()
 
         return {"group_password": row["group_password"]} if row else row
-        # TODO: think about throwing exception instead so can be more specific about
-        # the error in join_group()
 
 
 def get_user_password(username: str) -> str:
@@ -136,7 +133,6 @@ def get_user_password(username: str) -> str:
         row = cursor.fetchone()
 
         return {"password": row["password"]} if row else row
-        # TODO: think about throwing exception instead so can be more specific about
 
 
 def create_user(username: str, password: str):
