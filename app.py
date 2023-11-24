@@ -22,7 +22,8 @@ def api_get_users():
 
 @app.route("/api/users/groups", methods=["GET"])
 def api_get_groups_for_user():
-    pass
+    username = request.args.get("username")
+    return jsonify(da.get_groups_for_user(username))
 
 
 @app.route("/api/login", methods=["POST"])
